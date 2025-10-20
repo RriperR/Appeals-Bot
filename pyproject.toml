@@ -1,0 +1,17 @@
+[project]
+name = "appeals-bot"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "aiogram>=3.5",
+  "SQLAlchemy>=2.0",
+  "asyncpg>=0.29",
+  "pydantic-settings>=2.2",
+  "alembic>=1.13",
+  "loguru>=0.7",
+  "tenacity>=9.0",
+]
+
+[tool.alembic]
+script_location = "alembic"
+prepend_sys_path = true
