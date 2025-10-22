@@ -14,21 +14,13 @@ services:
       retries: 15
     ports: ["5432:5432"]
 
-  migrate:
+  bot:
     build: .
     env_file: .env
     depends_on:
       db:
         condition: service_healthy
-    command: uv run alembic upgrade head
-
-  bot:
-    build: .
-    env_file: .env
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-    command: uv run python -m app.telegram.main
+    command: ["/app/entrypoint.sh"]
 
 volumes:
   pgdata:

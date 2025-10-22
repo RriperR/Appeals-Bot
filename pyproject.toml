@@ -14,4 +14,4 @@ dependencies = [
 
 [tool.alembic]
 script_location = "alembic"
-prepend_sys_path = true
+prepend_sys_path = "."

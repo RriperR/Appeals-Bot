@@ -1,7 +1,9 @@
 from datetime import datetime
 from enum import StrEnum
+
 from sqlalchemy import String, Text, Boolean, ForeignKey, BigInteger, func, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from .base import Base
 
 

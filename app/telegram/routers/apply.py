@@ -2,10 +2,10 @@ from aiogram import Router, types, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import ReplyKeyboardRemove
 from sqlalchemy import select
+
 from app.telegram.states.appeal import AppealFSM
 from app.telegram.keyboards import commissions_inline
 from app.db.session import async_session
-from app.db import models as m
 
 
 router = Router()
