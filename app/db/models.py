@@ -15,6 +15,7 @@ class AppealStatus(StrEnum):
     REJECTED = "REJECTED"
     DELETED = "DELETED"
 
+
 class User(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -28,6 +29,7 @@ class User(Base):
 
     appeals: Mapped[list["Appeal"]] = relationship(back_populates="user")
 
+
 class Commission(Base):
     __tablename__ = "commissions"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -37,6 +39,7 @@ class Commission(Base):
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     appeals: Mapped[list["Appeal"]] = relationship(back_populates="commission")
+
 
 class Appeal(Base):
     __tablename__ = "appeals"
@@ -55,6 +58,7 @@ class Appeal(Base):
 
 Index("ix_appeal_user_commission", Appeal.user_id, Appeal.commission_id)
 
+
 class AppealFile(Base):
     __tablename__ = "appeal_files"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -65,6 +69,7 @@ class AppealFile(Base):
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     appeal: Mapped[Appeal] = relationship(back_populates="files")
+
 
 class Notification(Base):
     __tablename__ = "notifications"
@@ -77,10 +82,12 @@ class Notification(Base):
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     sent_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
+
 class AdminRequestStatus(StrEnum):
     PENDING = "PENDING"
     APPROVED = "APPROVED"
     DECLINED = "DECLINED"
+
 
 class AdminRequest(Base):
     __tablename__ = "admin_requests"
@@ -90,6 +97,7 @@ class AdminRequest(Base):
     status: Mapped[str] = mapped_column(String(32), default=AdminRequestStatus.PENDING.value, index=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
+
 
 class AdminRole(Base):
     __tablename__ = "admin_roles"
