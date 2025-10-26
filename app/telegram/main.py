@@ -5,7 +5,9 @@ from aiogram.enums import ParseMode
 
 from app.core.settings import settings
 from app.core.logging import setup_logging
-from .routers import public, apply, track, admin, admin_commissions, admin_appeals
+from .routers import (public, apply, track,
+                      admin, admin_commissions, admin_appeals, admin_appeal_manage,
+                      public_commissions)
 
 
 async def main():
@@ -21,6 +23,8 @@ async def main():
     dp.include_router(admin.router)
     dp.include_router(admin_commissions.router)
     dp.include_router(admin_appeals.router)
+    dp.include_router(admin_appeal_manage.router)
+    dp.include_router(public_commissions.router)
     await dp.start_polling(bot)
 
 if __name__ == "__main__":

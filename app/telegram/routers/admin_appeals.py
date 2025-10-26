@@ -41,10 +41,15 @@ async def admin_appeals_list(c: types.CallbackQuery):
         text_parts.append("\n" + appeal_admin_line(a, u, comm))
     text = "\n\n".join(text_parts)
 
+    rows_buttons = [
+        [types.InlineKeyboardButton(text=f"Открыть #{a.id}", callback_data=f"admin:appeal:open:{a.id}")]
+        for a, _, _ in rows
+    ]
     nav = []
     if page > 0:
-        nav.append(types.InlineKeyboardButton(text="⬅️ Предыдущие", callback_data=f"admin:appeals:list:{page-1}"))
+        nav.append(types.InlineKeyboardButton(text="⬅️ Предыдущие", callback_data=f"admin:appeals:list:{page - 1}"))
     if (page + 1) * PAGE_SIZE < total:
-        nav.append(types.InlineKeyboardButton(text="Следующие ➡️", callback_data=f"admin:appeals:list:{page+1}"))
-    kb = types.InlineKeyboardMarkup(inline_keyboard=[nav] if nav else [])
+        nav.append(types.InlineKeyboardButton(text="Следующие ➡️", callback_data=f"admin:appeals:list:{page + 1}"))
+
+    kb = types.InlineKeyboardMarkup(inline_keyboard=rows_buttons + ([nav] if nav else []))
     await c.message.edit_text(text, reply_markup=kb)

@@ -21,6 +21,8 @@ services:
       db:
         condition: service_healthy
     command: ["/app/entrypoint.sh"]
+    volumes:
+      - ./app:/app/app
 
 volumes:
   pgdata:
