@@ -10,8 +10,10 @@ from app.db.repositories import CommissionRepo
 
 router = Router()
 
+
 def is_admin(uid: int) -> bool:
     return uid in set(settings.admin_ids or [])
+
 
 @router.callback_query(F.data == "admin:commissions:add")
 async def commissions_add_entry(c: types.CallbackQuery, state: FSMContext):
@@ -19,6 +21,7 @@ async def commissions_add_entry(c: types.CallbackQuery, state: FSMContext):
         await c.answer("Нет прав", show_alert=True); return
     await state.set_state(CommissionAddFSM.ask_title)
     await c.message.edit_text("➕ Введите название комиссии:")
+
 
 @router.message(CommissionAddFSM.ask_title, F.text)
 async def commissions_add_title(m: types.Message, state: FSMContext):
@@ -29,6 +32,7 @@ async def commissions_add_title(m: types.Message, state: FSMContext):
     await state.update_data(title=title)
     await state.set_state(CommissionAddFSM.ask_description)
     await m.answer("Введите описание комиссии (или «-» чтобы оставить пустым):")
+
 
 @router.message(CommissionAddFSM.ask_description, F.text)
 async def commissions_add_desc(m: types.Message, state: FSMContext):
@@ -53,6 +57,7 @@ async def commissions_add_desc(m: types.Message, state: FSMContext):
 
     await state.clear()
     await m.answer(f"✅ Комиссия «{obj.title}» создана (id={obj.id}).")
+
 
 @router.callback_query(F.data == "admin:commissions:list")
 async def commissions_list(c: types.CallbackQuery):

@@ -4,13 +4,14 @@ from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from sqlalchemy import select
 
 from app.telegram.states.appeal import AppealFSM
-from app.telegram.keyboards import commissions_inline
+from app.telegram.keyboards import commissions_inline, skip_files_inline
 from app.db.session import async_session
 from app.db.repositories import UserRepo, AppealRepo
 from app.db.models import Commission
 
 
 router = Router()
+
 
 @router.message(F.text == "Написать обращение")
 async def apply_start(msg: Message, state: FSMContext):
@@ -26,12 +27,14 @@ async def apply_start(msg: Message, state: FSMContext):
     await msg.answer("📝 Выберите комиссию:", reply_markup=ReplyKeyboardRemove())
     await msg.answer("Список комиссий:", reply_markup=kb)
 
+
 @router.callback_query(AppealFSM.choose_commission, F.data.startswith("commission:"))
 async def choose_commission(clbk: CallbackQuery, state: FSMContext):
     cid = int(clbk.data.split(":")[1])
     await state.update_data(commission_id=cid, files=[])
     await state.set_state(AppealFSM.ask_contact)
     await clbk.message.edit_text("📲 Введите телефон или email (или «-» для анонимного обращения).")
+
 
 @router.message(AppealFSM.ask_contact)
 async def save_contact(msg: Message, state: FSMContext):
@@ -40,11 +43,28 @@ async def save_contact(msg: Message, state: FSMContext):
     await state.set_state(AppealFSM.ask_text)
     await msg.answer("✍️ Напишите ваше обращение (не менее 20 символов):")
 
+
 @router.message(AppealFSM.ask_text, F.text.len() >= 20)
 async def receive_text(msg: Message, state: FSMContext):
     await state.update_data(text=msg.text.strip())
     await state.set_state(AppealFSM.ask_file)
-    await msg.answer("Хотите прикрепить файл? Отправляйте фото/документы. Когда закончите — напишите «Пропустить».")
+    await msg.answer(
+        "Хотите прикрепить файл? Отправляйте фото/документы. Когда закончите — нажмите «Пропустить».",
+        reply_markup=skip_files_inline(),  # <<< добавили кнопку
+    )
+
+
+@router.callback_query(AppealFSM.ask_file, F.data == "appeal:skip_files")
+async def files_done_cb(clbk: CallbackQuery, state: FSMContext):
+    # переиспользуем логику сохранения обращения
+    class DummyMessage:
+        def __init__(self, from_user, chat, answer):
+            self.from_user = from_user
+            self.chat = chat
+            self.answer = answer
+    # аккуратно: лучше вынести в отдельную функцию, но для краткости — дернём общий код:
+    await files_done(clbk.message, state)
+
 
 @router.message(AppealFSM.ask_file, F.text.lower() == "пропустить")
 async def files_done(msg: Message, state: FSMContext):
@@ -74,6 +94,7 @@ async def files_done(msg: Message, state: FSMContext):
     await state.clear()
     await msg.answer(f"✅ Ваше обращение отправлено! Номер: #{appeal.id}")
 
+
 @router.message(AppealFSM.ask_file, F.document)
 async def on_document(msg: Message, state: FSMContext):
     d = msg.document
@@ -84,6 +105,7 @@ async def on_document(msg: Message, state: FSMContext):
     await state.update_data(files=files)
     await msg.answer(f"📎 Документ добавлен: {d.file_name or 'файл'}.\n"
                    f"Отправьте ещё файл или напишите «Пропустить».")
+
 
 @router.message(AppealFSM.ask_file, F.photo)
 async def on_photo(msg: Message, state: FSMContext):

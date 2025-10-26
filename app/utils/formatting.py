@@ -23,6 +23,7 @@ def format_appeal_card(
         f"Вложения: {files_count}"
     )
 
+
 def status_icon(status: str) -> str:
     return {
         "NEW": "🟢",
@@ -32,6 +33,7 @@ def status_icon(status: str) -> str:
         "REJECTED": "🔴",
         "DELETED": "⚫",
     }.get(status, "⚪")
+
 
 def status_ru(status: str) -> str:
     return {

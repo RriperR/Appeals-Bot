@@ -15,12 +15,14 @@ def main_menu() -> ReplyKeyboardMarkup:
         resize_keyboard=True,
     )
 
+
 def commissions_inline(items: list[tuple[int, str]]) -> InlineKeyboardMarkup:
     rows = [
         [InlineKeyboardButton(text=title, callback_data=f"commission:{cid}")]
         for cid, title in items
     ]
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
 
 def appeal_list_nav(has_prev: bool, has_next: bool) -> InlineKeyboardMarkup:
     row = []
@@ -29,3 +31,11 @@ def appeal_list_nav(has_prev: bool, has_next: bool) -> InlineKeyboardMarkup:
     if has_next:
         row.append(InlineKeyboardButton(text="Следующие ➡️", callback_data="page:next"))
     return InlineKeyboardMarkup(inline_keyboard=[row] if row else [])
+
+
+def skip_files_inline() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Пропустить", callback_data="appeal:skip_files")]
+        ]
+    )

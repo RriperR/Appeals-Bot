@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.db import models as m
 from app.services.notifications import send_notification
+from app.utils.formatting import status_ru
 
 ALLOWED_TRANSITIONS: dict[str, set[str]] = {
     "NEW": {"IN_REVIEW", "REJECTED", "DELETED"},
@@ -45,6 +46,6 @@ async def change_appeal_status(
             bot=bot,
             telegram_id=user.telegram_id,
             appeal_id=appeal.id,
-            text=f"📢 Статус вашего обращения #{appeal.id}: {new_status}",
+            text=f"📢 Статус вашего обращения #{appeal.id}: {status_ru(new_status)}",
         )
     return True, "Статус обновлён."
