@@ -1,12 +1,16 @@
 from aiogram import Router, types, F
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy import select, func
+from sqlalchemy.orm import aliased
+
 from app.db.session import async_session
 from app.db import models as m
 from app.utils.formatting import format_appeal_card
 
+
 router = Router()
 PAGE_SIZE = 5
+
 
 def nav_kb(page: int, total: int) -> types.InlineKeyboardMarkup | None:
     rows = []
@@ -19,6 +23,7 @@ def nav_kb(page: int, total: int) -> types.InlineKeyboardMarkup | None:
         return None
     builder.adjust(2)
     return builder.as_markup()
+
 
 async def render_user_page(msg: types.Message, telegram_id: int, page: int):
     async with async_session() as session:
@@ -37,29 +42,49 @@ async def render_user_page(msg: types.Message, telegram_id: int, page: int):
             await msg.answer("У вас пока нет обращений.")
             return
 
+        AF = aliased(m.AppealFile)
         rows = (await session.execute(
-            select(m.Appeal, m.Commission.title)
+            select(
+                m.Appeal.id,
+                m.Appeal.status,
+                m.Appeal.created_at,
+                m.Appeal.contact,
+                m.Appeal.text,
+                m.Commission.title,
+                func.count(AF.id).label("files_count"),
+            )
             .join(m.Commission, m.Commission.id == m.Appeal.commission_id)
+            .outerjoin(AF, AF.appeal_id == m.Appeal.id)
             .where(m.Appeal.user_id == user.id)
+            .group_by(m.Appeal.id, m.Commission.title)
             .order_by(m.Appeal.created_at.desc())
             .limit(PAGE_SIZE)
             .offset(page * PAGE_SIZE)
         )).all()
 
     text_parts = [f"📋 Ваши обращения (стр. {page+1}) • всего: {total}"]
-    for appeal, title in rows:
-        text_parts.append("\n" + format_appeal_card(
-            appeal.id, title, appeal.status, appeal.created_at,
-            appeal.contact, appeal.text, files_count=len(appeal.files or []),
-        ))
+    for aid, status, created_at, contact, text, title, files_count in rows:
+        text_parts.append(
+            "\n" + format_appeal_card(
+                appeal_id=aid,
+                commission_title=title,
+                status=status,
+                created_at=created_at,
+                contact=contact,
+                text=text,
+                files_count=files_count,
+            )
+        )
 
     text = "\n\n".join(text_parts)
     kb = nav_kb(page, total)
     await msg.answer(text, reply_markup=kb)
 
+
 @router.message(F.text == "Отследить статус")
-async def track(m: types.Message):
-    await render_user_page(m, telegram_id=m.from_user.id, page=0)
+async def track(msg: types.Message):
+    await render_user_page(msg, telegram_id=msg.from_user.id, page=0)
+
 
 @router.callback_query(F.data.startswith("user:appeals:page:"))
 async def user_page(c: types.CallbackQuery):

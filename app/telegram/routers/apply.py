@@ -1,6 +1,6 @@
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove, User
 from sqlalchemy import select
 
 from app.telegram.states.appeal import AppealFSM
@@ -56,43 +56,12 @@ async def receive_text(msg: Message, state: FSMContext):
 
 @router.callback_query(AppealFSM.ask_file, F.data == "appeal:skip_files")
 async def files_done_cb(clbk: CallbackQuery, state: FSMContext):
-    # переиспользуем логику сохранения обращения
-    class DummyMessage:
-        def __init__(self, from_user, chat, answer):
-            self.from_user = from_user
-            self.chat = chat
-            self.answer = answer
-    # аккуратно: лучше вынести в отдельную функцию, но для краткости — дернём общий код:
-    await files_done(clbk.message, state)
+    await _finalize_appeal(clbk.from_user, state, clbk.message)
 
 
 @router.message(AppealFSM.ask_file, F.text.lower() == "пропустить")
-async def files_done(msg: Message, state: FSMContext):
-    data = await state.get_data()
-    files: list[tuple[str, str | None, str | None]] = data.get("files", [])
-    commission_id: int = data["commission_id"]
-    contact: str | None = data.get("contact")
-    text: str = data["text"]
-
-    async with async_session() as session:
-        user = await UserRepo.upsert_from_telegram(
-            session,
-            tg_id=msg.from_user.id,
-            full_name=msg.from_user.full_name,
-            username=msg.from_user.username,
-        )
-        appeal = await AppealRepo.create(
-            session,
-            user_id=user.id,
-            commission_id=commission_id,
-            text=text,
-            contact=contact,
-            files=files,
-        )
-        await session.commit()
-
-    await state.clear()
-    await msg.answer(f"✅ Ваше обращение отправлено! Номер: #{appeal.id}")
+async def files_done_text(msg: Message, state: FSMContext):
+    await _finalize_appeal(msg.from_user, state, msg)
 
 
 @router.message(AppealFSM.ask_file, F.document)
@@ -116,3 +85,36 @@ async def on_photo(msg: Message, state: FSMContext):
     files.append(file_tuple)
     await state.update_data(files=files)
     await msg.answer("Фото добавлено. Ещё файл — или «Пропустить».")
+
+
+async def _finalize_appeal(user: User, state: FSMContext, msg: Message):
+    data = await state.get_data()
+    files: list[tuple[str, str | None, str | None]] = data.get("files", [])
+    commission_id: int = data["commission_id"]
+    contact: str | None = data.get("contact")
+    text: str = data["text"]
+
+    async with async_session() as session:
+        db_user = await UserRepo.upsert_from_telegram(
+            session,
+            tg_id=user.id,
+            full_name=user.full_name,
+            username=user.username,
+        )
+        appeal = await AppealRepo.create(
+            session,
+            user_id=db_user.id,
+            commission_id=commission_id,
+            text=text,
+            contact=contact,
+            files=files,
+        )
+        await session.commit()
+
+    await state.clear()
+    # уберём инлайн-клавиатуру под сообщением про «Пропустить»
+    try:
+        await msg.edit_reply_markup(reply_markup=None)
+    except Exception:
+        pass
+    await msg.answer(f"✅ Ваше обращение отправлено! Номер: #{appeal.id}")
