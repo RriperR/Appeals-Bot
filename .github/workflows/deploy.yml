@@ -54,21 +54,19 @@ jobs:
           ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Deploy on VPS
-        env:
-          REMOTE_DIR: ${{ secrets.REMOTE_PROJECT_DIR }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
-          ssh -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" << 'EOF'
+          ssh "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << EOF
           set -e
-          cd "$REMOTE_DIR"
+          cd "${{ secrets.REMOTE_PROJECT_DIR }}"
 
-          # Подтянуть новый образ и перезапустить сервисы
-          docker compose pull bot
-          docker compose up -d --remove-orphans
+          # docker compose v2 или docker-compose v1 — выберем доступную команду
+          if docker compose version >/dev/null 2>&1; then
+            C="docker compose"
+          else
+            C="docker-compose"
+          fi
 
+          \$C pull bot
+          \$C up -d --remove-orphans
           docker image prune -f
           EOF
