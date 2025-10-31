@@ -57,7 +57,7 @@ jobs:
         run: |
           ssh "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << EOF
           set -e
-          cd "$HOME/${{ secrets.REMOTE_PROJECT_DIR }}"
+          cd "${{ secrets.REMOTE_PROJECT_DIR }}"
 
           docker compose pull bot
           docker compose up -d --remove-orphans
