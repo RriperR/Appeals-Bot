@@ -7,8 +7,9 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen
 
 COPY entrypoint.sh entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
 
 COPY . .
+
+RUN chmod +x /app/entrypoint.sh
 
 ENV PYTHONPATH=/app
